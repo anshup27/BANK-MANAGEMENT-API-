@@ -1,29 +1,46 @@
-# Use the official Python 3.8 slim image as the base image
-FROM python:3.8-slim
+# Use lightweight python image
+FROM python:3.10-slim
 
-# Set the working directory within the container
+# Set working directory
 WORKDIR /api-flask
 
-# Copy the necessary files and directories into the container
+# Install system dependencies (optional but useful)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+# Copy folder assets
 COPY static/ /api-flask/static/
 COPY util/ /api-flask/util/
+
+# Copy configuration files
 COPY .env /api-flask/.env
+COPY swaggerConfig.py /api-flask/swaggerConfig.py
+COPY config.json /api-flask/config.json
 COPY .gitignore /api-flask/.gitignore
+
+# Copy app files
 COPY application.py /api-flask/application.py
 COPY auth.py /api-flask/auth.py
+COPY bankResource.py /api-flask/bankResource.py
 
-COPY student_routes.py /api-flask/student_routes.py
-COPY student_model.py /api-flask/student_model.py
-COPY students.db /api-flask/students.db
-COPY requirements.txt /api-flask/requirements.txt 
-COPY test_students.py /api-flask/test_students.py
+# Copy DB files (if you want DB inside container)
+COPY bank.db /api-flask/bank.db
+COPY bank_new.db /api-flask/bank_new.db
 
-# Upgrade pip and install Python dependencies
-RUN pip3 install --upgrade pip && pip3 install --no-cache-dir -r requirements.txt
+# Copy test files (if you need them)
+COPY test_account_api.py /api-flask/test_account_api.py
 
-# Expose port 5000 for the Flask application
+# Copy requirements file
+COPY requirements.txt /api-flask/requirements.txt
+
+# Install dependencies
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Expose port
 EXPOSE 5000
 
-# Define the command to run the Flask application using Gunicorn
-CMD ["gunicorn", "application:app", "-b", "0.0.0.0:5000", "-w", "4"]
+# Run the app
+CMD ["python", "application.py"]
